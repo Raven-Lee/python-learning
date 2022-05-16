@@ -1,4 +1,7 @@
+from re import M
 import requests
+import pygal
+from pygal.style import LightColorizedStyle as LCS, LightenStyle as LS
 
 # call api and save the respond
 url = 'http://api.github.com/search/repositories?q=language:python&sort=stars'
@@ -8,19 +11,36 @@ print("Status code:", r.status_code)
 # save respond data in a variable
 respond_dict = r.json()
 
-# handle it
-print("Total repositories: ",respond_dict['total_count'])
-
+# handle data
 repo_dicts = respond_dict['items']
-print("repositories returned:", len(respond_dict))
 
-repo_dict = repo_dicts[0]
+names, plot_dicts = [], []
+for repo_dict in repo_dicts:
+    names.append(repo_dict['name'])
+    plot_dict = {
+        'value': repo_dict['stargazers_count'],
+        'label': repo_dict['description'],
+        'xlink': repo_dict['html_url']
+    }
+    plot_dicts.append(plot_dict)
 
-print('\nSelected information about first repository:')
-print('Name:', repo_dict['name'])
-print('Owner:', repo_dict['owner']['login'])
-print('Stars:', repo_dict['stargazers_count'])
-print('Repository:', repo_dict['html_url'])
-print('Created:', repo_dict['created_at'])
-print('Updated:', repo_dict['updated_at'])
-print('Description:', repo_dict['description'])
+# visualize
+my_style = LS('#333366', base_style=LCS)
+
+my_config = pygal.Config()
+my_config.x_label_rotation = 45
+my_config.show_legend = False
+my_config.title_font_size = 24
+my_config.label_font_seize = 14
+my_config.major_label_font_size = 18
+my_config.truncate_label = 15
+my_config.show_y_guides = False
+my_config.width = 1000
+
+
+chart = pygal.Bar(my_config, style=my_style)
+chart.title = "Most-Starred Python Projects on Github"
+chart.x_labels = names
+
+chart.add('', plot_dicts)
+chart.render_to_file('python_repos.svg')
